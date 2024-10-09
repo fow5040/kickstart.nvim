@@ -360,6 +360,7 @@ require('lazy').setup({
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      { 'andrew-george/telescope-themes' },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -403,6 +404,7 @@ require('lazy').setup({
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
+      pcall(require('telescope').load_extension, 'themes')
 
       -- See `:help telescope.builtin`
       -- fwalsh: add my habitual search keybinds
@@ -443,6 +445,9 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      -- Telescope themes
+      vim.keymap.set('n', '<leader>te', ':Telescope themes<CR>', { noremap = true, silent = true, desc = 'Theme Switcher' })
     end,
   },
 
@@ -848,12 +853,12 @@ require('lazy').setup({
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
+    -- priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'tokyonight-night'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -941,6 +946,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  -- fwalsh: my plugins start
   {
     'nvim-tree/nvim-tree.lua',
     version = '*',
@@ -960,6 +966,42 @@ require('lazy').setup({
     config = function()
       vim.g.copilot_no_tab_map = true
       vim.api.nvim_set_keymap('i', '<S-CR>', 'copilot#Accept("<CR>")', { silent = true, expr = true })
+    end,
+  },
+  {
+    'neanias/everforest-nvim',
+    version = false,
+    lazy = false,
+    -- priority = 1000, -- make sure to load this before all the other start plugins
+    -- Optional; default configuration will be used if setup isn't called.
+    config = function()
+      require('everforest').setup {
+        -- Your config here
+      }
+    end,
+  },
+  {
+    'sainnhe/sonokai',
+    version = false,
+    lazy = false,
+    priority = 1000, -- make sure to load this before all the other start plugins
+    -- Optional; default configuration will be used if setup isn't called.
+    init = function()
+      -- Your config here
+      -- flavors: atlantis, andromeda, shusia, maia, espresso
+      vim.g.sonokai_style = 'espresso'
+      -- vim.cmd.colorscheme 'sonokai'
+    end,
+  },
+  {
+    'sainnhe/gruvbox-material',
+    lazy = false,
+    -- priority = 1000,
+    config = function()
+      -- Optionally configure and load the colorscheme
+      -- directly inside the plugin declaration.
+      vim.g.gruvbox_material_enable_italic = true
+      -- vim.cmd.colorscheme 'gruvbox-material'
     end,
   },
 
