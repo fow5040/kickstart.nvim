@@ -179,6 +179,18 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 vim.keymap.set('n', 'gb', '<C-o>', { noremap = true, silent = true })
 vim.keymap.set('n', 'gf', '<C-i>', { noremap = true, silent = true })
 
+-- fwalsh: incredibly complex go monad creation function
+vim.api.nvim_create_user_command('InsertComplexGoMonad', function()
+  local lines = {
+    'if err != nil {',
+    '\treturn nil, err',
+    '}',
+  }
+  vim.api.nvim_buf_set_lines(0, vim.fn.line '.', vim.fn.line '.', false, lines)
+end, {})
+
+vim.api.nvim_set_keymap('n', '<leader>ge', ':InsertComplexGoMonad<CR>', { noremap = true, silent = true, desc = 'Insert complex [G]o [E]rror handling monad' })
+
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
 -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
@@ -420,7 +432,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("" for repeat)' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>sb', builtin.buffers, { desc = '[ ] Find existing buffers' })
       vim.keymap.set('n', '<C-b>', builtin.buffers, { desc = 'Search in [B]uffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
@@ -623,7 +635,34 @@ require('lazy').setup({
       --  fwalsh: add langs I care about
       local servers = {
         -- clangd = {},
-        gopls = {},
+        gopls = {
+          on_attach = function(client, bufnr)
+            if client.server_capabilities.documentFormattingProvider then
+              vim.api.nvim_create_autocmd('BufWritePre', {
+                pattern = '*.go',
+                callback = function()
+                  local params = vim.lsp.util.make_range_params()
+                  params.context = { only = { 'source.organizeImports' } }
+                  -- buf_request_sync defaults to a 1000ms timeout. Depending on your
+                  -- machine and codebase, you may want longer. Add an additional
+                  -- argument after params if you find that you have to write the file
+                  -- twice for changes to be saved.
+                  -- E.g., vim.lsp.buf_request_sync(0, "textDocument/codeAction", params, 3000)
+                  local result = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', params)
+                  for cid, res in pairs(result or {}) do
+                    for _, r in pairs(res.result or {}) do
+                      if r.edit then
+                        local enc = (vim.lsp.get_client_by_id(cid) or {}).offset_encoding or 'utf-16'
+                        vim.lsp.util.apply_workspace_edit(r.edit, enc)
+                      end
+                    end
+                  end
+                  vim.lsp.buf.format { async = false }
+                end,
+              })
+            end
+          end,
+        },
         phpactor = {},
         pylsp = {},
         thriftls = {},
@@ -969,16 +1008,19 @@ require('lazy').setup({
     end,
   },
   {
+    'smoka7/hop.nvim',
+    config = function()
+      -- you can configure Hop the way you like here; see :h hop-config
+      require('hop').setup { keys = 'etovxqpdygfblzhckisuran' }
+      vim.keymap.set('n', '<leader><leader>', ':HopChar1<CR>', { desc = 'Hop to character' })
+    end,
+  },
+  {
     'neanias/everforest-nvim',
     version = false,
     lazy = false,
     -- priority = 1000, -- make sure to load this before all the other start plugins
     -- Optional; default configuration will be used if setup isn't called.
-    config = function()
-      require('everforest').setup {
-        -- Your config here
-      }
-    end,
   },
   {
     'sainnhe/sonokai',
@@ -989,8 +1031,8 @@ require('lazy').setup({
     init = function()
       -- Your config here
       -- flavors: atlantis, andromeda, shusia, maia, espresso
-      vim.g.sonokai_style = 'espresso'
-      -- vim.cmd.colorscheme 'sonokai'
+      vim.g.sonokai_style = 'maia'
+      vim.cmd.colorscheme 'sonokai'
     end,
   },
   {
